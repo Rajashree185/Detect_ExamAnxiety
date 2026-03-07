@@ -1,0 +1,32 @@
+text,label,label_encoded
+"I feel strong. I've overcome harder challenges before, and this exam is doable.",Low,0
+I can't function normally. I forgot to eat today because of exam worry.,High,2
+Every minute feels like torture as the exam approaches. I'm a complete wreck.,High,2
+I'm having panic attacks every time I think about the exam. I can't breathe properly.,High,2
+I feel like I've given it my best effort and that's all I can do.,Low,0
+I feel somewhat prepared but the fear of failure is lingering in my mind.,Moderate,1
+I studied most of the syllabus but I'm still worried about a few chapters.,Moderate,1
+My mental health is deteriorating rapidly because of exam pressure. I need help.,High,2
+I'm walking into the exam hall with confidence and a smile.,Low,0
+I'm at peace with however the exam goes. I know I did my best to prepare.,Low,0
+I'm feeling uneasy. I studied but I'm not sure it was enough.,Moderate,1
+I know the basics well but the harder questions might trip me up.,Moderate,1
+I feel great about tomorrow. All my flashcards and summaries are done.,Low,0
+I feel like I'm suffocating under the pressure. I can't take it anymore.,High,2
+I prepared as much as I could but I still have this nagging feeling of doubt.,Moderate,1
+I'm handling the stress okay but it's definitely there in the background.,Moderate,1
+I can't even look at my notes without feeling a wave of panic wash over me.,High,2
+I'm not worried at all. I understand the concepts well and I'm ready.,Low,0
+I feel assured. I went through every chapter and practiced every problem type.,Low,0
+I slept well last night and feel fresh for the exam today. No worries.,Low,0
+I'm worried about one specific topic that I still don't fully understand.,Moderate,1
+I keep going back to my notes because I don't feel like anything is sticking.,Moderate,1
+I've been crying because of the stress. I don't think I can handle this exam.,High,2
+I'm so overwhelmed that I've given up studying. What's the point anyway?,High,2
+I reviewed everything one last time and I'm confident I'll pass with ease.,Low,0
+My heart is racing constantly and I feel dizzy from the exam stress.,High,2
+The pressure to perform is crushing my spirit. I feel broken inside.,High,2
+I keep having intrusive thoughts about failing and it's driving me insane.,High,2
+I hope I don't blank out during the exam. I know the content but I get nervous.,Moderate,1
+I organized my study schedule perfectly and covered everything I needed to.,Low,0
+I feel like I understand the material but I might struggle under time pressure.,Moderate,1
