@@ -1,504 +1,582 @@
 """
 app.py - Streamlit Frontend for Exam Anxiety Detector
 ======================================================
-Provides an intuitive UI for students to input text and
-view their predicted anxiety level with visual indicators,
-emojis, and anxiety-management tips.
+Soft Minimalism UI — Vibrant Purple/Indigo background with
+Vibrant Green accents. Floating cards, clean white typography,
+and visual anxiety-level indicators with emoji feedback.
 """
 
 import streamlit as st
 import requests
 import time
+import random
 
-# ─── Configuration ───────────────────────────────────────────────────────────
+# ─── Configuration ────────────────────────────────────────────────────────────
 
-API_URL = "http://localhost:8000"
-PREDICT_ENDPOINT = f"{API_URL}/predict"
+API_URL       = "http://localhost:8000"
+PREDICT_URL   = f"{API_URL}/predict"
+HEALTH_URL    = f"{API_URL}/health"
 
-# ─── Page Configuration ─────────────────────────────────────────────────────
+# ─── Page Configuration ───────────────────────────────────────────────────────
 
 st.set_page_config(
     page_title="Exam Anxiety Detector",
     page_icon="🧠",
     layout="centered",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
 )
 
-# ─── Custom CSS (Frontend Design Skill: Ethereal Glassmorphism) ─────────────
+# ─── Global CSS ───────────────────────────────────────────────────────────────
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap');
 
-    :root {
-        --bg-color: #0d1117;
-        --glass-bg: rgba(20, 25, 35, 0.45);
-        --glass-border: rgba(255, 255, 255, 0.08);
-        --glass-highlight: rgba(255, 255, 255, 0.15);
-        --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-        
-        --text-primary: #f0f6fc;
-        --text-secondary: #8b949e;
-        
-        --accent-glow: #58a6ff;
-        
-        --low-anxiety: #2ea043;
-        --mod-anxiety: #d29922;
-        --high-anxiety: #f85149;
-    }
+  /* ── Root palette ── */
+  :root {
+    --bg-deep:       #0f0a1e;
+    --bg-mid:        #1a1035;
+    --bg-card:       rgba(30, 20, 60, 0.75);
+    --border-soft:   rgba(139, 92, 246, 0.25);
+    --border-green:  rgba(52, 211, 153, 0.45);
 
-    /* Overall Background setup */
-    .stApp {
-        background-color: var(--bg-color);
-        background-image: 
-            radial-gradient(circle at 10% 20%, rgba(88, 166, 255, 0.1) 0%, transparent 40%),
-            radial-gradient(circle at 90% 80%, rgba(138, 43, 226, 0.08) 0%, transparent 40%),
-            radial-gradient(circle at 50% 50%, rgba(20, 25, 35, 0.8) 0%, transparent 80%);
-        background-attachment: fixed;
-        color: var(--text-primary);
-    }
-    
-    /* Protect Streamlit internal styling */
-    .material-symbols-rounded, .material-icons, .icon {
-        font-family: 'Material Symbols Rounded', 'Material Icons', sans-serif !important;
-    }
-    
-    /* Targeted Typography overrides (avoids breaking Streamlit icons) */
-    .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
-        font-family: 'Playfair Display', serif !important;
-        font-weight: 600 !important;
-        letter-spacing: -0.02em;
-        color: var(--text-primary) !important;
-    }
-    
-    /* Apply color without breaking Streamlit font inheritance for icons */
-    .stMarkdown p, .stMarkdown li {
-        color: var(--text-primary);
-    }
+    --purple-light:  #a78bfa;
+    --purple-mid:    #7c3aed;
+    --indigo:        #4f46e5;
 
-    /* Main container styling */
-    .main .block-container {
-        padding-top: 3rem;
-        padding-bottom: 4rem;
-        max-width: 760px;
-        animation: fadeIn 1.2s ease-out;
-    }
+    --green-main:    #10b981;
+    --green-bright:  #34d399;
+    --green-glow:    rgba(52, 211, 153, 0.3);
 
-    /* Header styling - Glassmorphic */
-    .main-header {
-        text-align: center;
-        padding: 3.5rem 2rem;
-        background: var(--glass-bg);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid var(--glass-border);
-        border-radius: 24px;
-        margin-bottom: 3rem;
-        box-shadow: var(--glass-shadow);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .main-header::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, var(--glass-highlight), transparent);
-    }
+    --text-white:    #f5f3ff;
+    --text-dim:      rgba(245, 243, 255, 0.6);
+    --text-muted:    rgba(245, 243, 255, 0.38);
 
-    .main-header h1 {
-        font-family: 'Playfair Display', serif !important;
-        font-size: 3rem !important;
-        margin-bottom: 0.5rem;
-        background: linear-gradient(to right, #ffffff, #a5c8ff);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-shadow: 0 0 40px rgba(88, 166, 255, 0.3);
-    }
-    .main-header p {
-        font-family: 'Outfit', sans-serif !important;
-        font-size: 1.15rem;
-        font-weight: 300;
-        letter-spacing: 0.02em;
-        margin: 0;
-        color: var(--text-secondary);
-    }
+    --low-color:     #34d399;
+    --mod-color:     #fbbf24;
+    --high-color:    #f87171;
 
-    /* Text Area Styling */
-    .stTextArea textarea {
-        background: rgba(10, 15, 20, 0.6) !important;
-        border: 1px solid var(--glass-border) !important;
-        color: var(--text-primary) !important;
-        border-radius: 16px !important;
-        padding: 1.2rem !important;
-        font-family: 'Outfit', sans-serif !important;
-        font-size: 1.05rem !important;
-        line-height: 1.6 !important;
-        transition: all 0.3s ease !important;
-        box-shadow: inset 0 2px 10px rgba(0,0,0,0.5) !important;
-    }
-    .stTextArea textarea:focus {
-        border-color: var(--accent-glow) !important;
-        box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2), inset 0 2px 10px rgba(0,0,0,0.5) !important;
-    }
-    .stTextArea textarea::placeholder {
-        color: rgba(255, 255, 255, 0.8) !important;
-    }
+    --shadow-card:   0 8px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(139, 92, 246, 0.15);
+    --shadow-green:  0 0 24px rgba(52, 211, 153, 0.25);
+  }
 
-    /* Button Styling */
-    .stButton > button {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid var(--glass-border) !important;
-        color: var(--text-primary) !important;
-        border-radius: 12px !important;
-        padding: 0.6rem 1.5rem !important;
-        font-family: 'Outfit', sans-serif !important;
-        font-weight: 500 !important;
-        letter-spacing: 0.5px !important;
-        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        backdrop-filter: blur(8px) !important;
-    }
-    .stButton > button:hover {
-        background: rgba(255, 255, 255, 0.1) !important;
-        border-color: var(--glass-highlight) !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.3) !important;
-        color: #fff !important;
-    }
-    .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, rgba(88,166,255,0.2) 0%, rgba(88,166,255,0.05) 100%) !important;
-        border: 1px solid rgba(88, 166, 255, 0.4) !important;
-        box-shadow: 0 4px 15px rgba(88, 166, 255, 0.15) !important;
-    }
-    .stButton > button[kind="primary"]:hover {
-        background: linear-gradient(135deg, rgba(88,166,255,0.3) 0%, rgba(88,166,255,0.1) 100%) !important;
-        border: 1px solid rgba(88, 166, 255, 0.6) !important;
-        box-shadow: 0 8px 25px rgba(88, 166, 255, 0.25) !important;
-    }
+  /* ── Base ── */
+  html, body, .stApp {
+    background: linear-gradient(135deg, #0f0a1e 0%, #1a1035 45%, #13062e 100%) !important;
+    background-attachment: fixed !important;
+    color: var(--text-white) !important;
+    font-family: 'Inter', sans-serif !important;
+  }
 
-    /* Result cards */
-    .anxiety-card {
-        padding: 2.5rem 2rem;
-        border-radius: 20px;
-        margin: 2rem 0;
-        text-align: center;
-        background: var(--glass-bg);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        box-shadow: var(--glass-shadow);
-        border: 1px solid var(--glass-border);
-        position: relative;
-        overflow: hidden;
-        animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    
-    .anxiety-card h1 {
-        font-size: 4rem !important;
-        margin-bottom: 0.5rem;
-        line-height: 1;
-        filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3));
-    }
-    
-    .anxiety-card h2 {
-        font-family: 'Playfair Display', serif !important;
-        font-size: 2.2rem !important;
-        margin-bottom: 0.5rem;
-    }
+  /* Subtle radial orbs */
+  .stApp::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 15% 10%, rgba(124, 58, 237, 0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 85% 85%, rgba(16, 185, 129, 0.10) 0%, transparent 55%),
+      radial-gradient(ellipse 40% 35% at 70% 15%, rgba(79, 70, 229, 0.12) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
 
-    .anxiety-card.low {
-        border-top: 2px solid var(--low-anxiety);
-        background: linear-gradient(180deg, rgba(46, 160, 67, 0.05) 0%, rgba(20, 25, 35, 0.4) 100%);
-    }
-    .anxiety-card.moderate {
-        border-top: 2px solid var(--mod-anxiety);
-        background: linear-gradient(180deg, rgba(210, 153, 34, 0.05) 0%, rgba(20, 25, 35, 0.4) 100%);
-    }
-    .anxiety-card.high {
-        border-top: 2px solid var(--high-anxiety);
-        background: linear-gradient(180deg, rgba(248, 81, 73, 0.05) 0%, rgba(20, 25, 35, 0.4) 100%);
-    }
+  /* ── Layout container ── */
+  .main .block-container {
+    padding-top: 2.5rem !important;
+    padding-bottom: 4rem !important;
+    max-width: 780px !important;
+  }
 
-    /* Tip card */
-    .tip-card {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--glass-border);
-        border-radius: 12px;
-        padding: 1.2rem 1.5rem;
-        margin: 1rem 0;
-        font-size: 1.05rem;
-        line-height: 1.6;
-        transition: transform 0.3s ease;
-        border-left: 3px solid var(--glass-highlight);
-        font-family: 'Outfit', sans-serif;
-    }
-    .tip-card:hover {
-        background: rgba(255, 255, 255, 0.05);
-        transform: translateX(5px);
-        border-left-color: var(--accent-glow);
-    }
+  /* ── All markdown text ── */
+  .stMarkdown, .stMarkdown p, .stMarkdown li, label, .stTextArea label {
+    color: var(--text-white) !important;
+    font-family: 'Inter', sans-serif !important;
+  }
 
-    /* Disclaimer card */
-    .disclaimer-card {
-        background: rgba(210, 153, 34, 0.05);
-        border: 1px solid rgba(210, 153, 34, 0.3);
-        border-radius: 12px;
-        padding: 1.2rem;
-        margin-top: 2rem;
-        font-size: 0.95rem;
-        color: rgba(255, 255, 255, 0.7) !important;
-        font-family: 'Outfit', sans-serif;
-    }
-    
-    /* Progress Bars */
-    .stProgress > div > div > div > div {
-        background-color: var(--accent-glow) !important;
-        border-radius: 10px;
-    }
-    .stProgress {
-        background: rgba(0,0,0,0.3) !important;
-        border-radius: 10px;
-        overflow: hidden;
-    }
+  /* ── Floating card base ── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 22px;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: var(--shadow-card);
+    padding: 2.2rem 2rem;
+    margin-bottom: 1.6rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.5), transparent);
+  }
 
-    /* Sidebar Styling */
-    .css-1d391kg, [data-testid="stSidebar"] {
-        background: rgba(10, 15, 20, 0.7) !important;
-        backdrop-filter: blur(20px) !important;
-        border-right: 1px solid var(--glass-border) !important;
-    }
+  /* ── Hero header ── */
+  .hero-card {
+    text-align: center;
+    padding: 3.2rem 2rem 2.6rem;
+    background: linear-gradient(145deg, rgba(79, 70, 229, 0.2), rgba(30, 20, 60, 0.7));
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 26px;
+    box-shadow: var(--shadow-card);
+    backdrop-filter: blur(20px);
+    margin-bottom: 2.2rem;
+  }
+  .hero-card .badge {
+    display: inline-block;
+    background: rgba(52, 211, 153, 0.12);
+    border: 1px solid var(--border-green);
+    color: var(--green-bright) !important;
+    border-radius: 50px;
+    padding: 0.28rem 1.1rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 1.1rem;
+  }
+  .hero-card h1 {
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 2.8rem !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+    margin: 0 0 0.7rem !important;
+    background: linear-gradient(135deg, #f5f3ff 30%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero-card p {
+    font-size: 1.05rem !important;
+    color: var(--text-dim) !important;
+    margin: 0 !important;
+    font-weight: 300;
+  }
 
-    /* Footer */
-    .footer-text {
-        text-align: center;
-        color: rgba(255, 255, 255, 0.4) !important;
-        font-size: 0.85rem;
-        margin-top: 4rem;
-        padding-bottom: 1rem;
-        border-top: 1px solid var(--glass-border);
-        font-family: 'Outfit', sans-serif;
-        padding-top: 2rem;
-    }
+  /* ── Section label ── */
+  .section-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--purple-light) !important;
+    margin-bottom: 0.7rem;
+  }
 
-    /* Animations */
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-    @keyframes slideUp {
-        from { opacity: 0; transform: translateY(30px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    /* Subheaders styling explicitly applied */
-    .stMarkdown h3 {
-        margin-top: 2rem !important;
-        margin-bottom: 1rem !important;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid var(--glass-border);
-        display: inline-block;
-    }
+  /* ── Text area ── */
+  .stTextArea textarea {
+    background: rgba(15, 10, 30, 0.6) !important;
+    border: 1.5px solid var(--border-soft) !important;
+    border-radius: 16px !important;
+    color: var(--text-white) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 1rem !important;
+    line-height: 1.65 !important;
+    padding: 1.1rem 1.2rem !important;
+    caret-color: var(--green-bright);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
+    resize: vertical !important;
+  }
+  .stTextArea textarea:focus {
+    border-color: var(--green-main) !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+    outline: none !important;
+  }
+  .stTextArea textarea::placeholder {
+    color: var(--text-muted) !important;
+  }
+  /* Hide default Streamlit label */
+  .stTextArea label { display: none !important; }
 
+  /* ── Primary "Detect Anxiety" button ── */
+  div[data-testid="stButton"] > button[kind="primary"] {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    border: none !important;
+    border-radius: 14px !important;
+    color: #fff !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.4px !important;
+    padding: 0.8rem 2rem !important;
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4) !important;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    width: 100% !important;
+  }
+  div[data-testid="stButton"] > button[kind="primary"]:hover {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%) !important;
+    box-shadow: 0 8px 28px rgba(52, 211, 153, 0.5) !important;
+    transform: translateY(-2px) !important;
+  }
+  div[data-testid="stButton"] > button[kind="primary"]:active {
+    transform: translateY(0) !important;
+  }
+
+  /* ── Secondary / sample text buttons ── */
+  div[data-testid="stButton"] > button {
+    background: rgba(139, 92, 246, 0.12) !important;
+    border: 1px solid rgba(139, 92, 246, 0.3) !important;
+    border-radius: 10px !important;
+    color: var(--purple-light) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.88rem !important;
+    font-weight: 500 !important;
+    transition: all 0.25s ease !important;
+  }
+  div[data-testid="stButton"] > button:hover {
+    background: rgba(139, 92, 246, 0.22) !important;
+    border-color: rgba(167, 139, 250, 0.55) !important;
+    color: #fff !important;
+    transform: translateY(-1px) !important;
+  }
+
+  /* ── Result anxiety card ── */
+  .result-card {
+    border-radius: 22px;
+    padding: 2.4rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    margin: 1.6rem 0;
+    animation: slideInUp 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(16px);
+  }
+  .result-card.low {
+    background: linear-gradient(160deg, rgba(16,185,129,0.12) 0%, rgba(30,20,60,0.7) 100%);
+    border: 1.5px solid rgba(52, 211, 153, 0.45);
+    box-shadow: 0 0 30px rgba(52, 211, 153, 0.12), var(--shadow-card);
+  }
+  .result-card.moderate {
+    background: linear-gradient(160deg, rgba(251,191,36,0.10) 0%, rgba(30,20,60,0.7) 100%);
+    border: 1.5px solid rgba(251, 191, 36, 0.4);
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.10), var(--shadow-card);
+  }
+  .result-card.high {
+    background: linear-gradient(160deg, rgba(248,113,113,0.12) 0%, rgba(30,20,60,0.7) 100%);
+    border: 1.5px solid rgba(248, 113, 113, 0.4);
+    box-shadow: 0 0 30px rgba(248, 113, 113, 0.12), var(--shadow-card);
+  }
+  .result-emoji {
+    font-size: 4.5rem;
+    line-height: 1;
+    margin-bottom: 0.6rem;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.3));
+  }
+  .result-level {
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+    margin: 0 0 0.35rem !important;
+    color: var(--text-white) !important;
+  }
+  .result-confidence {
+    font-size: 0.9rem;
+    color: var(--text-dim) !important;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* ── Status pill ── */
+  .pill {
+    display: inline-block;
+    border-radius: 50px;
+    padding: 0.22rem 1rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .pill-low      { background: rgba(52,211,153,0.15); color: #34d399 !important; border: 1px solid rgba(52,211,153,0.4); }
+  .pill-moderate { background: rgba(251,191,36,0.12); color: #fbbf24 !important; border: 1px solid rgba(251,191,36,0.35); }
+  .pill-high     { background: rgba(248,113,113,0.12); color: #f87171 !important; border: 1px solid rgba(248,113,113,0.35); }
+
+  /* ── Progress bars ── */
+  .stProgress > div > div > div > div {
+    border-radius: 8px !important;
+    transition: width 0.6s ease !important;
+  }
+  .stProgress { border-radius: 8px !important; overflow: hidden !important; }
+
+  /* ── Tips box ── */
+  .tip-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 1rem 1.1rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(139,92,246,0.18);
+    border-left: 3px solid var(--green-main);
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    font-size: 0.97rem;
+    line-height: 1.6;
+    color: var(--text-white) !important;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+  .tip-item:hover {
+    background: rgba(255,255,255,0.055);
+    transform: translateX(4px);
+  }
+
+  /* ── Disclaimer box ── */
+  .disclaimer-box {
+    background: rgba(251,191,36,0.06);
+    border: 1px solid rgba(251,191,36,0.25);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    font-size: 0.88rem;
+    color: rgba(251,191,36,0.85) !important;
+    line-height: 1.55;
+    margin-top: 1.4rem;
+  }
+
+  /* ── Hide sidebar toggle button ── */
+  [data-testid="collapsedControl"] { display: none !important; }
+  [data-testid="stSidebar"]        { display: none !important; }
+
+  /* ── Character counter ── */
+  .char-count {
+    text-align: right;
+    font-size: 0.78rem;
+    color: var(--text-muted) !important;
+    margin-top: -0.4rem;
+    margin-bottom: 0.6rem;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    margin-top: 3.5rem;
+    padding-top: 1.8rem;
+    border-top: 1px solid rgba(139,92,246,0.15);
+    font-size: 0.82rem;
+    color: var(--text-muted) !important;
+    line-height: 1.8;
+  }
+
+  /* ── Expander ── */
+  details summary {
+    color: var(--purple-light) !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+  }
+
+  /* ── Spinner text override ── */
+  .stSpinner > div { color: var(--green-bright) !important; }
+
+  /* ── Animations ── */
+  @keyframes slideInUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .fade-in { animation: fadeIn 0.6s ease; }
 </style>
 """, unsafe_allow_html=True)
 
 
-# ─── Header ──────────────────────────────────────────────────────────────────
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+LEVEL_COLORS = {
+    "Low":      "#34d399",
+    "Moderate": "#fbbf24",
+    "High":     "#f87171",
+}
+LEVEL_EMOJIS = {
+    "Low":      "😊",
+    "Moderate": "😐",
+    "High":     "😟",
+}
+LEVEL_CSS = {
+    "Low": "low",
+    "Moderate": "moderate",
+    "High": "high",
+}
+PILL_CSS = {
+    "Low": "pill-low",
+    "Moderate": "pill-moderate",
+    "High": "pill-high",
+}
+
+SAMPLE_TEXTS = {
+    "😌 Calm":        "I feel well-prepared for my exam tomorrow. I've studied all the major topics consistently and I'm confident in what I know. I just need a good night's sleep.",
+    "😟 Restless":    "I'm a bit worried about the exam. There are a few topics I haven't fully covered. I keep second-guessing myself even on things I know well. I hope I do okay.",
+    "😰 Overwhelmed": "I can't sleep. My hands are shaking whenever I open my textbook. I feel like no matter how much I study it'll never be enough. I'm terrified I'm going to fail.",
+}
+
+
+
+
+# ─── Hero Header ──────────────────────────────────────────────────────────────
 
 st.markdown("""
-<div class="main-header">
-    <h1>Exam Anxiety Detector</h1>
-    <p>AI-powered ethereal mental wellness support</p>
+<div class="hero-card">
+  <div class="badge">AI-Powered Mental Wellness</div>
+  <h1>Exam Anxiety Detector</h1>
+  <p>Share how you're feeling before your exam — our model will assess your anxiety level and offer personalised tips.</p>
 </div>
 """, unsafe_allow_html=True)
 
 
-# ─── Sidebar ─────────────────────────────────────────────────────────────────
+# ─── Input Card ───────────────────────────────────────────────────────────────
 
-with st.sidebar:
-    st.markdown("### ✧ About")
-    st.markdown(
-        "This tool uses a **BERT-based AI model** to analyze text "
-        "and detect exam-related anxiety levels, wrapped in a calming interface."
-    )
+st.markdown('<div class="section-label">Your Thoughts</div>', unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### ✧ Anxiety Levels")
-    st.markdown("<span style='color:var(--low-anxiety)'>●</span> **Low** — Calm and confident", unsafe_allow_html=True)
-    st.markdown("<span style='color:var(--mod-anxiety)'>●</span> **Moderate** — Some worry present", unsafe_allow_html=True)
-    st.markdown("<span style='color:var(--high-anxiety)'>●</span> **High** — Significant distress", unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### ✧ Privacy")
-    st.markdown(
-        "Your text is **not stored** anywhere. "
-        "All analysis is done in real-time and data is "
-        "discarded after processing."
-    )
-
-
-# ─── Main Input Section ─────────────────────────────────────────────────────
-
-st.markdown("### Share Your Thoughts")
-st.markdown(
-    "Write about how you're feeling for your upcoming exam. "
-    "Take a deep breath. We're here to understand."
-)
+# Pre-load sample text via session state
+if "prefill" not in st.session_state:
+    st.session_state.prefill = ""
 
 user_text = st.text_area(
-    "Your text input:",
-    height=200,
-    placeholder="Take a moment. What's on your mind regarding your upcoming exams? Are you feeling prepared or overwhelmed? Write freely...",
-    label_visibility="collapsed"
+    label="thoughts",
+    value=st.session_state.prefill,
+    height=185,
+    placeholder='Enter your exam-related thoughts or feelings…  e.g. I\'ve been studying for weeks but I still feel unprepared. Every time I look at the syllabus I feel overwhelmed.',
+    key="input_area",
 )
 
-# Character count
+# Character / word count
 if user_text:
-    st.caption(f"✧ {len(user_text)} characters • {len(user_text.split())} words")
+    st.markdown(
+        f'<div class="char-count">{len(user_text)} chars · {len(user_text.split())} words</div>',
+        unsafe_allow_html=True,
+    )
 
+# ── Sample text shortcuts ──────────────────────────────────────────────────────
 
-# ─── Sample Texts ────────────────────────────────────────────────────────────
+with st.expander("✦ Try a sample text"):
+    cols = st.columns(3)
+    for idx, (label, text) in enumerate(SAMPLE_TEXTS.items()):
+        with cols[idx]:
+            if st.button(label, use_container_width=True, key=f"sample_{idx}"):
+                st.session_state.prefill = text
+                st.rerun()
 
-with st.expander("✧ Try a curated sample text"):
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        if st.button("Calm State", use_container_width=True):
-            st.session_state["sample_text"] = (
-                "I feel well-prepared for my exam. I studied consistently "
-                "and I'm confident in my understanding of the material."
-            )
-            st.rerun()
-
-    with col2:
-        if st.button("Restless", use_container_width=True):
-            st.session_state["sample_text"] = (
-                "I'm a bit worried about the exam. I studied most topics "
-                "but I'm not sure if I covered everything. I hope I do okay."
-            )
-            st.rerun()
-
-    with col3:
-        if st.button("Overwhelmed", use_container_width=True):
-            st.session_state["sample_text"] = (
-                "I'm terrified about the exam. I can't sleep, my hands are "
-                "shaking, and I feel like I'm going to fail no matter what."
-            )
-            st.rerun()
-
-# Load sample text if selected
-if "sample_text" in st.session_state:
-    user_text = st.session_state.pop("sample_text")
-
-
-# ─── Analysis Button ────────────────────────────────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
-analyze_clicked = st.button(
-    "Analyze My Text ✧",
+
+# ── Detect button ─────────────────────────────────────────────────────────────
+
+detect_clicked = st.button(
+    "🔍  Detect Anxiety",
     type="primary",
     use_container_width=True,
-    disabled=not user_text
+    disabled=not bool(user_text and user_text.strip()),
 )
 
-if analyze_clicked and user_text:
-    with st.spinner("Analyzing neural patterns..."):
+
+# ─── Prediction & Results ─────────────────────────────────────────────────────
+
+if detect_clicked and user_text and user_text.strip():
+    with st.spinner("Analyzing emotional patterns..."):
+        time.sleep(0.6)                            # brief dramatic pause
         try:
-            # Call the FastAPI backend
             response = requests.post(
-                PREDICT_ENDPOINT,
-                json={"text": user_text},
-                timeout=30
+                PREDICT_URL,
+                json={"text": user_text.strip()},
+                timeout=30,
             )
-
-            if response.status_code == 200:
-                result = response.json()
-                anxiety_level = result["anxiety_level"]
-                emoji = result["emoji"]
-                confidence = result["confidence"]
-                confidence_scores = result["confidence_scores"]
-                tips = result["tips"]
-                disclaimer = result["disclaimer"]
-
-                # Small delay for effect
-                time.sleep(0.8)
-
-                # ─── Display Results ─────────────────────────────────
-
-                # Anxiety level card
-                card_class = anxiety_level.lower()
-                st.markdown(f"""
-                <div class="anxiety-card {card_class}">
-                    <h1>{emoji}</h1>
-                    <h2 style='font-family: "Playfair Display", serif;'>{anxiety_level} State Detected</h2>
-                    <p style="font-size: 1.15rem; opacity: 0.7; letter-spacing: 1px; text-transform: uppercase;">
-                        Confidence: {confidence*100:.1f}%
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
-
-                # Confidence breakdown
-                st.markdown("### Confidence Breakdown")
-                st.markdown("<br>", unsafe_allow_html=True)
-                for level_name, score in confidence_scores.items():
-                    col_label, col_bar = st.columns([1, 4])
-                    with col_label:
-                        color = "var(--low-anxiety)" if level_name == 'Low' else "var(--mod-anxiety)" if level_name == 'Moderate' else "var(--high-anxiety)"
-                        st.markdown(f"<span style='color: {color}; font-weight: 500;'>{level_name}</span>", unsafe_allow_html=True)
-                    with col_bar:
-                        st.progress(score)
-
-                # Tips section
-                st.markdown("<br>", unsafe_allow_html=True)
-                st.markdown("### Recommendations")
-                for tip in tips:
-                    st.markdown(f"""
-                    <div class="tip-card">{tip}</div>
-                    """, unsafe_allow_html=True)
-
-                # Disclaimer
-                st.markdown(f"""
-                <div class="disclaimer-card">
-                    ✧ {disclaimer}
-                </div>
-                """, unsafe_allow_html=True)
-
-                # Additional resources for high anxiety
-                if anxiety_level == "High":
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    st.error(
-                        "🚨 **Immediate Support:** If you feel overwhelmed, "
-                        "please contact your institution's counseling service."
-                    )
-                    st.markdown(
-                        "**Helplines:**\n"
-                        "- 🇮🇳 **iCall**: 9152987821\n"
-                        "- 🇮🇳 **Vandrevala Foundation**: 1860-2662-345\n"
-                        "- 🌍 **Crisis Text Line**: Text HOME to 741741"
-                    )
-
-            else:
-                st.error(f"✧ Server Connection Error: {response.status_code}")
-
         except requests.exceptions.ConnectionError:
-            st.error(
-                "✧ **Cannot connect to neural backend.** "
-                "Ensure FastAPI is running."
-            )
+            st.error("🔴 **Cannot connect to backend.** Make sure FastAPI is running on port 8000.")
+            st.stop()
         except requests.exceptions.Timeout:
-            st.error("✧ **Request timed out.** Network is under strain. Try again.")
-        except Exception as e:
-            st.error(f"✧ **Unexpected error:** {str(e)}")
+            st.error("⏱️ **Request timed out.** The model took too long. Please try again.")
+            st.stop()
+
+    if response.status_code != 200:
+        st.error(f"❌ Backend error {response.status_code}: {response.text}")
+        st.stop()
+
+    data             = response.json()
+    level            = data["anxiety_level"]          # "Low" | "Moderate" | "High"
+    emoji            = LEVEL_EMOJIS.get(level, data.get("emoji", ""))
+    confidence       = data["confidence"]
+    confidence_scores= data["confidence_scores"]      # {Low, Moderate, High: float}
+    tips             = data["tips"]
+    disclaimer       = data["disclaimer"]
+
+    color    = LEVEL_COLORS[level]
+    card_cls = LEVEL_CSS[level]
+    pill_cls = PILL_CSS[level]
+
+    # ── Result card ────────────────────────────────────────────────────────────
+    st.markdown(f"""
+    <div class="result-card {card_cls}">
+      <div class="pill {pill_cls}">{level} Anxiety Detected</div>
+      <div class="result-emoji">{emoji}</div>
+      <div class="result-level" style="color:{color};">{level} Anxiety State</div>
+      <div class="result-confidence">Confidence · {confidence*100:.1f}%</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── Confidence breakdown ───────────────────────────────────────────────────
+    st.markdown('<div class="section-label">Confidence Breakdown</div>', unsafe_allow_html=True)
+
+    ordered_levels = ["Low", "Moderate", "High"]
+    level_bar_colors = {
+        "Low":      "#34d399",
+        "Moderate": "#fbbf24",
+        "High":     "#f87171",
+    }
+    for lv in ordered_levels:
+        score = confidence_scores.get(lv, 0.0)
+        bar_color = level_bar_colors[lv]
+        col_name, col_bar = st.columns([1, 4])
+        with col_name:
+            st.markdown(
+                f"<span style='color:{bar_color}; font-weight:600; font-size:0.95rem;'>{lv}</span>",
+                unsafe_allow_html=True,
+            )
+        with col_bar:
+            st.progress(round(score, 4))
+
+    # ── Tips box ──────────────────────────────────────────────────────────────
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown('<div class="section-label">Personalised Tips</div>', unsafe_allow_html=True)
+
+    tips_to_show = tips[:5]                            # max 5 tips displayed
+    tips_html = "".join(
+        f'<div class="tip-item">{tip}</div>'
+        for tip in tips_to_show
+    )
+    st.markdown(f'<div class="card fade-in">{tips_html}</div>', unsafe_allow_html=True)
+
+    # ── Disclaimer ────────────────────────────────────────────────────────────
+    st.markdown(
+        f'<div class="disclaimer-box">{disclaimer}</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ── High-anxiety emergency block ──────────────────────────────────────────
+    if level == "High":
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.error(
+            "🚨 **Immediate Support:** If you feel overwhelmed, please reach out to "
+            "your institution's counseling service or a trusted person right away."
+        )
+        st.markdown(
+            "**Crisis Helplines (India):**\n"
+            "- 📞 **iCall** — 9152987821\n"
+            "- 📞 **Vandrevala Foundation** — 1860-2662-345\n"
+            "- 🌍 **International Crisis Text Line** — Text HOME to 741741"
+        )
+
+elif detect_clicked and not (user_text and user_text.strip()):
+    st.warning("Please enter some text before clicking Detect.")
 
 
-# ─── Footer ──────────────────────────────────────────────────────────────────
+# ─── Footer ───────────────────────────────────────────────────────────────────
 
 st.markdown("""
-<div class="footer-text">
-    Ethereal Exam Anxiety Detector • A neural wellness experience<br>
-    Non-diagnostic supportive tool • Your data is ephemeral<br>
-    © 2026
+<div class="footer">
+  🧠 Exam Anxiety Detector &nbsp;·&nbsp; AI-Powered Mental Wellness Tool<br>
+  Non-diagnostic &amp; supportive only &nbsp;·&nbsp; Your data is never stored<br>
+  &copy; 2026
 </div>
 """, unsafe_allow_html=True)
-
