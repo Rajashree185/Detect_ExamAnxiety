@@ -81,8 +81,8 @@ anxitey/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/aritra0342/Exam-Anxiety-Detector.git
-cd Exam-Anxiety-Detector
+git clone https://github.com/Rajashree185/Detect_ExamAnxiety.git
+cd Detect_ExamAnxiety
 ```
 
 ### 2. Create & Activate Virtual Environment
@@ -224,7 +224,7 @@ This project is open source and available under the [MIT License](LICENSE).
 
 <div align="center">
 
-Made with ❤️ by [Aritra](https://github.com/aritra0342)
+Made with ❤️ by [Rajashree185](https://github.com/Rajashree185)
 
 *"One exam does not define your worth or your future."*
 
